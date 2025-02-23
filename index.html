@@ -37,9 +37,14 @@
     <script src="js/rbush.min.js"></script>
     <script src="js/labelgun.min.js"></script>
     <script src="js/labels.js"></script>
+    <script src="js/hyperlink_generator.js"></script>
+    <script src="js/pop_main_data.js"></script>
+    <!-- <script src="js/remove_empty_rows_from_popup_content.js"></script> -->
     <script src="data/main_data.js"></script>
     <script src="data/nation_outlines.js"></script>
     <script>
+      var level_array = ["L0", "L1", "L2", "L3"];
+
       var highlightLayer;
       function highlightFeature(e) {
         highlightLayer = e.target;
@@ -69,28 +74,12 @@
       var hash = new L.Hash(map);
       map.attributionControl.setPrefix(
         // '<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>'
-      '');
+        ""
+      );
       var autolinker = new Autolinker({
         truncate: { length: 30, location: "smart" },
       });
-      // remove popup's row if "visible-with-data"
-      function removeEmptyRowsFromPopupContent(content, feature) {
-        var tempDiv = document.createElement("div");
-        tempDiv.innerHTML = content;
-        var rows = tempDiv.querySelectorAll("tr");
-        for (var i = 0; i < rows.length; i++) {
-          var td = rows[i].querySelector("td.visible-with-data");
-          var key = td ? td.id : "";
-          if (
-            td &&
-            td.classList.contains("visible-with-data") &&
-            feature.properties[key] == null
-          ) {
-            rows[i].parentNode.removeChild(rows[i]);
-          }
-        }
-        return tempDiv.innerHTML;
-      }
+
       // add class to format popup if it contains media
       function addClassToPopupIfMedia(content, popup) {
         var tempDiv = document.createElement("div");
@@ -112,105 +101,41 @@
         .addTo(map);
       var bounds_group = new L.featureGroup([]);
       function setBounds() {}
-      function pop_main_data(feature, layer) {
-        layer.on({
-          mouseout: function (e) {
-            for (var i in e.target._eventParents) {
-              if (typeof e.target._eventParents[i].resetStyle === "function") {
-                e.target._eventParents[i].resetStyle(e.target);
-              }
-            }
-          },
-          mouseover: highlightFeature,
-        });
-        var popupContent =
-          '<table>\
-                    <tr>\
-                        <td class="visible-with-data" id="L3" colspan="2"><strong>L3</strong><br />' +
-          (feature.properties["L3"] !== null
-            ? autolinker.link(
-                String(feature.properties["L3"])
-                  .replace(/'/g, "'")
-                  .toLocaleString()
-              )
-            : "") +
-          '</td>\
-                    </tr>\
-                    <tr>\
-                        <td class="visible-with-data" id="L2" colspan="2"><strong>L2</strong><br />' +
-          (feature.properties["L2"] !== null
-            ? autolinker.link(
-                String(feature.properties["L2"])
-                  .replace(/'/g, "'")
-                  .toLocaleString()
-              )
-            : "") +
-          '</td>\
-                    </tr>\
-                    <tr>\
-                        <td class="visible-with-data" id="L1" colspan="2"><strong>L1</strong><br />' +
-          (feature.properties["L1"] !== null
-            ? autolinker.link(
-                String(feature.properties["L1"])
-                  .replace(/'/g, "'")
-                  .toLocaleString()
-              )
-            : "") +
-          '</td>\
-                    </tr>\
-                    <tr>\
-                        <td class="visible-with-data" id="L0" colspan="2"><strong>L0</strong><br />' +
-          (feature.properties["L0"] !== null
-            ? autolinker.link(
-                String(feature.properties["L0"])
-                  .replace(/'/g, "'")
-                  .toLocaleString()
-              )
-            : "") +
-          '</td>\
-                    </tr>\
-                    <tr>\
-                        <td class="visible-with-data" id="location" colspan="2"><strong>location</strong><br />' +
-          (feature.properties["location"] !== null
-            ? autolinker.link(
-                String(feature.properties["location"])
-                  .replace(/'/g, "'")
-                  .toLocaleString()
-              )
-            : "") +
-          '</td>\
-                    </tr>\
-                    <tr>\
-                        <td class="visible-with-data" id="date" colspan="2"><strong>date</strong><br />' +
-          (feature.properties["date"] !== null
-            ? autolinker.link(
-                String(feature.properties["date"])
-                  .replace(/'/g, "'")
-                  .toLocaleString()
-              )
-            : "") +
-          '</td>\
-                    </tr>\
-                    <tr>\
-                        <td class="visible-with-data" id="details" colspan="2"><strong>details</strong><br />' +
-          (feature.properties["details"] !== null
-            ? autolinker.link(
-                String(feature.properties["details"])
-                  .replace(/'/g, "'")
-                  .toLocaleString()
-              )
-            : "") +
-          "</td>\
-                    </tr>\
-                </table>";
-        var content = removeEmptyRowsFromPopupContent(popupContent, feature);
-        layer.on("popupopen", function (e) {
-          addClassToPopupIfMedia(content, e.popup);
-        });
-        layer.bindPopup(content, { maxHeight: 400 });
-      }
 
-      function style_main_data() {
+      function style_main_data(feature) {
+        var level_colors = {
+          L3: "#0050b1",
+          L2: "#2d7ac4",
+          L1: "#5ba4d7",
+          L0: "#89cfeb",
+        };
+
+        var boundary_fill = "rgba(0,0,0,0)";
+
+        if (feature.properties.L1 != null) {
+          if (feature.properties.L2 != null) {
+            if (feature.properties.L3 != null) {
+              boundary_fill = level_colors.L2;
+            } else {
+              boundary_fill = level_colors.L1;
+            }
+          } else {
+            boundary_fill = level_colors.L0;
+          }
+        }
+
+        if (
+          feature.properties.location != null ||
+          feature.properties.date != null ||
+          feature.properties.details != null
+        ) {
+          level_array.forEach(function (level) {
+            if (feature.properties[level] != null) {
+              boundary_fill = level_colors[level];
+            }
+          });
+        }
+
         return {
           pane: "pane_main_data",
           opacity: 1,
@@ -221,10 +146,11 @@
           weight: 1.0,
           fill: true,
           fillOpacity: 1,
-          fillColor: "rgba(0,80,177,1.0)",
+          fillColor: boundary_fill,
           interactive: true,
         };
       }
+
       map.createPane("pane_main_data");
       map.getPane("pane_main_data").style.zIndex = 400;
       map.getPane("pane_main_data").style["mix-blend-mode"] = "normal";
@@ -250,25 +176,25 @@
           },
           mouseover: highlightFeature,
         });
-        var popupContent =
-          '<table>\
-                    <tr>\
-                        <td colspan="2">' +
-          (feature.properties["L0"] !== null
-            ? autolinker.link(
-                String(feature.properties["L0"])
-                  .replace(/'/g, "'")
-                  .toLocaleString()
-              )
-            : "") +
-          "</td>\
-                    </tr>\
-                </table>";
-        var content = removeEmptyRowsFromPopupContent(popupContent, feature);
-        layer.on("popupopen", function (e) {
-          addClassToPopupIfMedia(content, e.popup);
-        });
-        layer.bindPopup(content, { maxHeight: 400 });
+        // var popupContent =
+        //   '<table>\
+        //                                                       <tr>\
+        //                                                           <td colspan="2">' +
+        //   (feature.properties["L0"] !== null
+        //     ? autolinker.link(
+        //         String(feature.properties["L0"])
+        //           .replace(/'/g, "'")
+        //           .toLocaleString()
+        //       )
+        //     : "") +
+        //   "</td>\
+        //                                                       </tr>\
+        //                                                   </table>";
+        // // var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+        // layer.on("popupopen", function (e) {
+        //   addClassToPopupIfMedia(popupContent, e.popup);
+        // });
+        // layer.bindPopup(popupContent, { maxHeight: 400 });
       }
 
       function style_nation_outlines() {
@@ -279,13 +205,14 @@
           dashArray: "",
           lineCap: "butt",
           lineJoin: "miter",
-          weight: 2.0,
-          fill: true,
+          weight: 2.5,
+          fill: false,
           fillOpacity: 1,
           fillColor: "rgba(227,26,28,0.0)",
           interactive: false,
         };
       }
+
       map.createPane("pane_nation_outlines");
       map.getPane("pane_nation_outlines").style.zIndex = 401;
       map.getPane("pane_nation_outlines").style["mix-blend-mode"] = "normal";
