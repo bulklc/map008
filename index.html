@@ -63,14 +63,61 @@
           });
         }
       }
+
+      let coords_washington =
+        main_data.features[
+          main_data.features.findIndex(
+            (element) => element.properties.L1 === "Washington"
+          )
+        ].geometry.coordinates;
+
+      let coords_florida =
+        main_data.features[
+          main_data.features.findIndex(
+            (element) => element.properties.L1 === "Florida"
+          )
+        ].geometry.coordinates;
+
+      let coords_maine =
+        main_data.features[
+          main_data.features.findIndex(
+            (element) => element.properties.L1 === "Maine"
+          )
+        ].geometry.coordinates;
+
+      var start_bounds = L.latLngBounds(
+        coords_washington.concat(coords_florida).concat(coords_maine)
+      );
+
+      // console.log(start_bounds);
+
+      // start_bounds = L.latLngBounds(
+      //   [37.787246651000089, -122.493726499999923],
+      //   [37.78731259500006, -122.493586666999931]
+      // );
+
+      console.log(start_bounds);
+
+      let ne_lat = start_bounds._northEast.lng;
+      let ne_lng = start_bounds._northEast.lat;
+
+      let sw_lat = start_bounds._southWest.lng;
+      let sw_lng = start_bounds._southWest.lat;
+
+      start_bounds._northEast.lat = ne_lat;
+      start_bounds._northEast.lng = ne_lng;
+
+      start_bounds._southWest.lat = sw_lat;
+      start_bounds._southWest.lng = sw_lng;
+
+      console.log(start_bounds);
+
       var map = L.map("map", {
         zoomControl: false,
         maxZoom: 28,
         minZoom: 1,
-      }).fitBounds([
-        [-94.00560734609996, -199.46927346103976],
-        [144.67489107485937, 256.66677972935065],
-      ]);
+      }).fitBounds(start_bounds);
+
       var hash = new L.Hash(map);
       map.attributionControl.setPrefix(
         // '<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>'
