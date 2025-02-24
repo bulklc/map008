@@ -43,6 +43,63 @@
     <script src="data/main_data.js"></script>
     <script src="data/nation_outlines.js"></script>
     <script>
+      var copied_main_data = structuredClone(main_data);
+
+      main_data.features = [];
+
+      copied_main_data.features.forEach(function (feature) {
+        if (
+          feature.properties.L1 != null ||
+          feature.properties.location != null ||
+          feature.properties.date != null ||
+          feature.properties.details != null
+        ) {
+          main_data.features.push(feature);
+        }
+      });
+
+      var copied_nation_outlines = structuredClone(nation_outlines);
+
+      nation_outlines.features = [];
+
+      copied_nation_outlines.features.forEach(function (feature) {
+        if (
+          feature.properties.L0 === "Liberia" ||
+          feature.properties.L0 === "Guinea"
+        ) {
+          nation_outlines.features.push(feature);
+        }
+      });
+
+      // main_data.features.forEach(function (feature) {
+      //   if (feature.properties.L0.includes("Mexico")) {
+      //     console.log(feature);
+      //   }
+
+      //   if (
+      //     feature.properties.L0 !== "United States of America" &&
+      //     feature.properties.L0 !== "India" &&
+      //     feature.properties.L0 !== "Liberia" &&
+      //     feature.properties.L0 !== "Cameroon" &&
+      //     feature.properties.L0 !== "Guinea"
+      //   ) {
+      //     // var feature_index = ;s
+
+      //     // console.log(feature);
+
+      //     main_data.features.splice(
+      //       main_data.features.findIndex(
+      //         (element) =>
+      //           element.properties.L0 === feature.properties.L0 &&
+      //           element.properties.L1 === feature.properties.L1 &&
+      //           element.properties.L2 === feature.properties.L2 &&
+      //           element.properties.L3 === feature.properties.L3
+      //       ),
+      //       1
+      //     );
+      //   }
+      // });
+
       var level_array = ["L0", "L1", "L2", "L3"];
 
       var highlightLayer;
@@ -59,7 +116,7 @@
         } else {
           highlightLayer.setStyle({
             fillColor: "#ffff00",
-            fillOpacity: 1,
+            fillOpacity: 0.8,
           });
         }
       }
@@ -89,15 +146,6 @@
         coords_washington.concat(coords_florida).concat(coords_maine)
       );
 
-      // console.log(start_bounds);
-
-      // start_bounds = L.latLngBounds(
-      //   [37.787246651000089, -122.493726499999923],
-      //   [37.78731259500006, -122.493586666999931]
-      // );
-
-      console.log(start_bounds);
-
       let ne_lat = start_bounds._northEast.lng;
       let ne_lng = start_bounds._northEast.lat;
 
@@ -110,7 +158,7 @@
       start_bounds._southWest.lat = sw_lat;
       start_bounds._southWest.lng = sw_lng;
 
-      console.log(start_bounds);
+      // console.log(start_bounds);
 
       var map = L.map("map", {
         zoomControl: false,
@@ -192,7 +240,7 @@
           lineJoin: "miter",
           weight: 1.0,
           fill: true,
-          fillOpacity: 1,
+          fillOpacity: 0.8,
           fillColor: boundary_fill,
           interactive: true,
         };
@@ -274,7 +322,24 @@
       });
       bounds_group.addLayer(layer_nation_outlines);
       map.addLayer(layer_nation_outlines);
-      setBounds();
+
+      map.createPane("pane_OSMStandard_0");
+      map.getPane("pane_OSMStandard_0").style.zIndex = 1;
+
+      var layer_OSMStandard_0 = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+          pane: "pane_OSMStandard_0",
+          opacity: 1.0,
+          minZoom: 1,
+          maxZoom: 23,
+          minNativeZoom: 0,
+          maxNativeZoom: 19,
+        }
+      );
+
+      // layer_OSMStandard_0;
+      map.addLayer(layer_OSMStandard_0);
     </script>
   </body>
 </html>
